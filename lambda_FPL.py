@@ -210,7 +210,7 @@ def handler():
                 print("Error fetching file:", e)
                 return 0
         return 0
-        
+         
     match_num = calc_match_number()
     if match_num == 0:
         return
@@ -240,7 +240,7 @@ def handler():
                     print("No match found for onScoring() function call.")
             except requests.RequestException as e:
                 print("Error fetching file:", e)
-
+ 
         if len(battingCard) == 0:
             return
         for gang_member in gang:
@@ -311,8 +311,9 @@ def handler():
                 scores_for_match[0].append(batsmen[players[0][i].split('+')[0].strip()])
             scores_for_match[0].append("")
 
+            # Multiply bowling points by 1.25 before appending
             for i in range(5):
-                scores_for_match[0].append(bowlers[players[0][6+i].split('+')[0].strip()])
+                scores_for_match[0].append(bowlers[players[0][6+i].split('+')[0].strip()] * 1.25)
             scores_for_match[0].append('=SUM(B' + str(match_number + 2) + ':L' + str(match_number + 2) + ')')
             
             for i in range(12):
