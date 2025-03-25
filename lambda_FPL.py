@@ -321,6 +321,7 @@ def handler():
 
             for i in range(5):
                 scores_for_match[0].append(bowlers[players[6+i].split('+')[0].strip()])
+            scores_for_match[0].append('=SUM(B' + str(match_number + 2) + ':F' + str(match_number + 2) + ')+1.25*SUM(H' + str(match_number + 2) + ':L' + str(match_number + 2) + ')')
             
             for i in range(13):
                 if players[12+i] == "":
