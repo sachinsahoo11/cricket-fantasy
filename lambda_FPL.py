@@ -90,7 +90,7 @@ def handler():
 
         score = 25*wkts + 12*maidens
         if wkts >= 5:
-            score += 12
+            score += 16
         elif wkts >= 4:
             score += 8
         elif wkts >= 3:
