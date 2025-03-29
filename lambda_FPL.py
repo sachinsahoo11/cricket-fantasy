@@ -21,13 +21,13 @@ def lambda_handler(event, context):
 
 def handler():
     base_scorecard_url = "https://ipl-stats-sports-mechanic.s3.ap-south-1.amazonaws.com/ipl/feeds/"
-    match_num_offset = 1353
+    match_num_offset = 1798
 
-    gc = gspread.service_account(filename="./stellar-mariner-245520-3035a4005388.json")
+    gc = gspread.service_account(filename="./stellar-mariner-245520-ebbbab7b7435.json")
 
-    sh = gc.open_by_key("1Qex3w6Po8WF8jtznaNtkmzBPAB_vk_YJxkhJ0ivxqRE")
+    sh = gc.open_by_key("1QElTOMr-ufHivDKVzaQLhDIkCctDpd83wsjiNOMSm7Y")
 
-    gang = ["Farzi COE", "Farzi IT", "Sahoo", "Mittal", "Boss", "Sandy", "Kohli"]
+    gang = ["Sarthak COE", "Sarthak IT", "Sachin", "Yash", "Vaibhav", "Paresh", "Kshitij", "Pradeep", "Varun"]
 
     def calc_batting_score(batsman, batsmen):
         name = batsman["PlayerName"]
@@ -88,7 +88,7 @@ def handler():
         wkts = bowler["Wickets"]
         economy = bowler["Economy"]
 
-        score = 25*wkts + 12*maidens #+ 8*lbw_bowled[name]
+        score = 25*wkts + 12*maidens
         if wkts >= 5:
             score += 16
         elif wkts >= 4:
@@ -144,7 +144,7 @@ def handler():
         if str(batsman["OutDesc"]).startswith("c & b"):
             name = str(batsman["OutDesc"]).split("c & b ")[1]
         elif str(batsman["OutDesc"]).startswith("c "):
-            name = str(batsman["OutDesc"]).split("c ")[1].split(" b ")[0]
+            name = str(batsman["OutDesc"]).split(" b ")[0].split("c ")[1]
         if catchers.get(name) is None:
             return
         catchers[name] += 1
@@ -179,8 +179,8 @@ def handler():
                 match = re.search(r'onScoringMatchsummary\((.*?)\);', response.text, re.DOTALL)
                 if match:
                     json_string = match.group(1).strip()
-                    if "Won By" in json_string:
-                        sh.worksheet("Unsorted Scores").update('A100', 'finished')
+                    if "Won by" in json_string:
+                        sh.worksheet("Unsorted Scores").update([['finished']], 'A100')
                     return prev_match_number
                 else:
                     print("No match found for onScoringMatchsummary() function call.")
@@ -198,11 +198,11 @@ def handler():
                 match = re.search(r'onScoringMatchsummary\((.*?)\);', response.text, re.DOTALL)
                 if match:
                     json_string = match.group(1).strip()
-                    if "Won By" in json_string:
-                        sh.worksheet("Unsorted Scores").update('A7', prev_match_number + 1)
+                    if "Won by" in json_string:
+                        sh.worksheet("Unsorted Scores").update([[prev_match_number + 1]], 'A7')
                     else:
-                        sh.worksheet("Unsorted Scores").update('A7', prev_match_number + 1)
-                        sh.worksheet("Unsorted Scores").update('A100', 'in_progress')
+                        sh.worksheet("Unsorted Scores").update([[prev_match_number + 1]], 'A7')
+                        sh.worksheet("Unsorted Scores").update([['in_progress']], 'A100')
                     return prev_match_number + 1
                 else:
                     print("No match found for onScoringMatchsummary() function call.")
@@ -214,7 +214,7 @@ def handler():
     match_num = calc_match_number()
     if match_num == 0:
         return
-    
+
     for match_number in range(match_num, match_num + 1):
         base_url = base_scorecard_url + str(match_num_offset + match_number)
         innings = ["Innings1", "Innings2"]
@@ -251,27 +251,35 @@ def handler():
             wickets = {}
             scores_for_match = [[]]
             print("\n##" + gang_member + "##")
-            players = sh.worksheet(gang_member).get('B2:AY2')
+            cell_range = sh.worksheet(gang_member).range('B2:BB2')
+            players = [cell.value for cell in cell_range]
+            # print(len(players))
             for i in range(5):
-                player = players[0][i]
+                player = players[i]
                 player = player.split('+')[0].strip()
                 batsmen[player] = 0
 
             for i in range(5):
-                player = players[0][6+i]
+                player = players[6+i]
                 player = player.split('+')[0].strip()
                 bowlers[player] = 0
 
-            for i in range(12):
-                player = players[0][12+i]
+            for i in range(13):
+                player = players[12+i]
+                if player == "":
+                    continue
                 six_hitters[player] = 0
 
-            for i in range(12):
-                player = players[0][25+i]
+            for i in range(13):
+                player = players[26+i]
+                if player == "":
+                    continue
                 catchers[player] = 0
             
-            for i in range(12):
-                player = players[0][38+i]
+            for i in range(13):
+                player = players[40+i]
+                if player == "":
+                    continue
                 wickets[player] = 0
 
             for inning in range(0, len(battingCard), 1):
@@ -308,80 +316,117 @@ def handler():
                 print("     Wickets " + str(wickets[player]))
 
             for i in range(5):
-                scores_for_match[0].append(batsmen[players[0][i].split('+')[0].strip()])
+                scores_for_match[0].append(batsmen[players[i].split('+')[0].strip()])
             scores_for_match[0].append("")
 
             for i in range(5):
-                scores_for_match[0].append(bowlers[players[0][6+i].split('+')[0].strip()])
-            scores_for_match[0].append('=SUM(B' + str(match_number + 2) + ':L' + str(match_number + 2) + ')')
+                scores_for_match[0].append(bowlers[players[6+i].split('+')[0].strip()])
+            scores_for_match[0].append('=SUM(B' + str(match_number + 2) + ':F' + str(match_number + 2) + ')+1.25*SUM(H' + str(match_number + 2) + ':L' + str(match_number + 2) + ')')
             
-            for i in range(12):
-                scores_for_match[0].append(six_hitters[players[0][12+i]])
+            for i in range(13):
+                if players[12+i] == "":
+                    scores_for_match[0].append("")    
+                else:
+                    scores_for_match[0].append(six_hitters[players[12+i]])
             scores_for_match[0].append("")
 
-            for i in range(12):
-                scores_for_match[0].append(catchers[players[0][25+i]])
+            for i in range(13):
+                if players[26+i] == "":
+                    scores_for_match[0].append("")    
+                else:
+                    scores_for_match[0].append(catchers[players[26+i]])
             scores_for_match[0].append("")
 
-            for i in range(12):
-                scores_for_match[0].append(wickets[players[0][38+i]])
+            for i in range(13):
+                if players[40+i] == "":
+                    scores_for_match[0].append("")    
+                else:
+                    scores_for_match[0].append(wickets[players[40+i]])
             
-            sh.worksheet(gang_member).update('B' + str(match_number + 2) + ":AY" + str(match_number + 2), scores_for_match, value_input_option='USER_ENTERED')
-        
-        sh.worksheet("Unsorted Scores").update('A7', match_number)
+            sh.worksheet(gang_member).update(scores_for_match, 'B' + str(match_number + 2) + ":BB" + str(match_number + 2), value_input_option='USER_ENTERED')
+        sh.worksheet("Unsorted Scores").update([[match_number]], 'A7')
         # time.sleep(20)
 
-    final_points = sh.worksheet("Leaderboard").get('B24:O30')
-    total_winnings = [25000, 25000, 12500, 6250, 6250, 6250, 6250]
+    final_points = sh.worksheet("Leaderboard").get('B24:O32')
+    total_winnings = [25000, 25000, 40000, 11250, 11250, 11250, 11250]
     overall_winnings = {}
 
     actual_winnings = [row[:] for row in final_points]
 
-    for player in range(7):
-        overall_winnings[final_points[player][0]] = -12500
+    for player in range(9):
+        overall_winnings[final_points[player][0]] = -15000
         for category in range(7):
             actual_winnings[player][category*2 + 1] = 0
 
     for category in range(7):
+        if category == 3 or category == 4:
+            for i in range(len(final_points)):
+                val = final_points[i][category*2 + 1]
+                new_points = val.split('(')[0].strip()
+                final_points[i][category*2 + 1] = new_points
+
         top_score = final_points[0][category*2 + 1]
         player = 0
-        while(final_points[player][category*2 + 1] == top_score):
+        while(player < len(final_points) and final_points[player][category*2 + 1] == top_score):
+            print(player)
             player += 1
         # if top spot shared by more than 1
-        if player > 1:
+        if player > 2:
             amt = total_winnings[category] / player
             for i in range(player):
                 actual_winnings[i][category*2 + 1] = amt
                 overall_winnings[actual_winnings[i][category*2]] += amt
-        else:
-            actual_winnings[0][category*2 + 1] = 0.7 * total_winnings[category]
-            overall_winnings[actual_winnings[0][category*2]] += 0.7 * total_winnings[category]
-            second_top_score = final_points[1][category*2 + 1]
-            while(final_points[player][category*2 + 1] == second_top_score):
+        elif player == 2:
+            actual_winnings[0][category*2 + 1] = 0.4 * total_winnings[category]
+            overall_winnings[actual_winnings[0][category*2]] += 0.4 * total_winnings[category]
+            actual_winnings[1][category*2 + 1] = 0.4 * total_winnings[category]
+            overall_winnings[actual_winnings[1][category*2]] += 0.4 * total_winnings[category]
+            second_top_score = final_points[2][category*2 + 1]
+            while(player < len(final_points) and final_points[player][category*2 + 1] == second_top_score):
                 player += 1
-            count_of_players = player - 1
-            if count_of_players == 0:
-                print(category)
-                print(player)
+            count_of_players = player - 2
             amt = float((0.3 * total_winnings[category])) / count_of_players
             for i in range(count_of_players):
-                actual_winnings[i+1][category*2 + 1] = amt
-                overall_winnings[actual_winnings[i+1][category*2]] += amt
+                actual_winnings[i+2][category*2 + 1] = amt
+                overall_winnings[actual_winnings[i+2][category*2]] += amt
+        else:
+            actual_winnings[0][category*2 + 1] = 0.5 * total_winnings[category]
+            overall_winnings[actual_winnings[0][category*2]] += 0.5 * total_winnings[category]
+            second_top_score = final_points[1][category*2 + 1]
+            while(player < len(final_points) and final_points[player][category*2 + 1] == second_top_score):
+                player += 1
+            count_of_players = player - 1
+            if count_of_players == 1:
+                actual_winnings[1][category*2 + 1] = 0.3 * total_winnings[category]
+                overall_winnings[actual_winnings[1][category*2]] += 0.3 * total_winnings[category]
+                third_top_score = final_points[2][category*2 + 1]
+                while(player < len(final_points) and final_points[player][category*2 + 1] == third_top_score):
+                    player += 1
+                cnt_third = player - 2
+                amt = float((0.2 * total_winnings[category])) / cnt_third
+                for i in range(cnt_third):
+                    actual_winnings[i+2][category*2 + 1] = amt
+                    overall_winnings[actual_winnings[i+2][category*2]] += amt
+            else:
+                amt = float((0.5 * total_winnings[category])) / count_of_players
+                for i in range(count_of_players):
+                    actual_winnings[i+1][category*2 + 1] = amt
+                    overall_winnings[actual_winnings[i+1][category*2]] += amt
 
     for key, val in overall_winnings.items():
         print(key + " " + str(val))
 
     final_winnings = []
-    for player in range(7):
+    for player in range(9):
         final_winnings.append([final_points[player][0], overall_winnings[final_points[player][0]]])
 
     # print(final_winnings)
     sorted_final_winnings = sorted(final_winnings, key=lambda x: x[1], reverse=True)
 
-    sh.worksheet("Leaderboard").update('B34:040', actual_winnings)
-    sh.worksheet("Leaderboard").update('H43:I49', sorted_final_winnings)
-    # ind_time = datetime.now(timezone("Asia/Kolkata")).strftime("%d/%m/%Y %H:%M:%S")
+    sh.worksheet("Leaderboard").update(actual_winnings, 'B36:044')
+    sh.worksheet("Leaderboard").update(sorted_final_winnings, 'H47:I55')
+    # # ind_time = datetime.now(timezone("Asia/Kolkata")).strftime("%d/%m/%Y %H:%M:%S")
     IST = dateutil.tz.gettz('Asia/Kolkata')
     ind_time = datetime.datetime.now(tz=IST).strftime("%d/%m/%Y %H:%M:%S")
     # sh.worksheet("Leaderboard").update('B5', [[str(datetime.datetime.now().strftime("%d/%m/%Y %H:%M:%S"))]])
-    sh.worksheet("Leaderboard").update('B5', [[str(ind_time)]])
+    sh.worksheet("Leaderboard").update([[str(ind_time)]], 'B5')
